@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>اكتشف مخالفات مخزن الغازات المضغوطة</title>
+<style>
+:root{
+  --navy:#1F3864;--gold:#B08D57;--bg:#F7F5F1;--card:#FFFFFF;--text:#1d2430;--muted:#6b7280;--border:#E3E0D8;--green:#2E7D32;--red:#C62828;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15181f;--card:#1d2129;--text:#eceef1;--muted:#9aa3af;--border:#333945;}}
+:root[data-theme="dark"]{--bg:#15181f;--card:#1d2129;--text:#eceef1;--muted:#9aa3af;--border:#333945;}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif;}
+.app{max-width:860px;margin:0 auto;padding:16px 14px 50px;}
+header{text-align:center;margin-bottom:8px;}
+header h1{color:var(--navy);font-size:1.25rem;margin:0 0 3px;}
+header p{color:var(--gold);font-weight:600;margin:0;font-size:.84rem;}
+.top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;}
+.pill{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:6px 13px;font-size:.82rem;font-weight:700;color:var(--navy);}
+.pill.r{color:var(--red);}
+.btn{padding:7px 13px;border:none;border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;background:var(--navy);color:#fff;}
+.btn.g{background:var(--card);color:var(--text);border:1px solid var(--border);}
+.hint{font-size:.8rem;color:var(--muted);margin:0 0 8px;}
+svg{width:100%;height:auto;border-radius:12px;border:1px solid var(--border);display:block;background:#e9edf3;}
+.hs{fill:rgba(0,0,0,.001);cursor:pointer;}
+.hs.found{fill:rgba(46,125,50,.14);stroke:#2E7D32;stroke-width:3;stroke-dasharray:6 4;pointer-events:none;}
+.hs.flash{fill:rgba(198,40,40,.25);}
+.hs.pulse{stroke:#F1C40F;stroke-width:4;animation:pl .6s 4 alternate;}
+@keyframes pl{from{fill:rgba(241,196,15,.05)}to{fill:rgba(241,196,15,.4)}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-top:10px;}
+.card h3{margin:0 0 6px;font-size:.95rem;color:var(--navy);}
+.fb{font-size:.86rem;line-height:1.9;}
+.fb.ok{border-right:4px solid var(--green);} .fb.no{border-right:4px solid var(--red);}
+.found-list .it{font-size:.8rem;padding:7px 0;border-bottom:1px solid var(--border);}
+.found-list .it b{color:var(--green);}
+.done{display:none;margin-top:10px;padding:14px;border-radius:12px;background:#EAF4EA;color:var(--green);font-weight:700;text-align:center;line-height:1.9;}
+.done.show{display:block;}
+.rules{font-size:.8rem;line-height:2;}
+.rules b{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🔍 اكتشف مخالفات مخزن الغازات المضغوطة</h1>
+    <p>Compressed Gas Cylinders — Hazard Hunt</p>
+  </header>
+  <div class="top">
+    <span class="pill" id="pf">المخالفات المكتشفة: 0 / 9</span>
+    <span class="pill r" id="pw">أخطاء: 0</span>
+    <button class="btn" onclick="hint()">💡 تلميح</button>
+    <button class="btn g" onclick="reset()">↻ إعادة</button>
+  </div>
+  <p class="hint">اضغط على أي مخالفة تلاحظها في المشهد. احذر: بعض الأوضاع صحيحة وضغطك عليها يُحسب خطأ.</p>
+  <div id="sceneBox"></div>
+  <div class="card fb" id="fb" style="display:none"></div>
+  <div class="done" id="done"></div>
+  <div class="card found-list"><h3>📋 المخالفات التي اكتشفتها</h3><div id="fl" style="color:var(--muted);font-size:.8rem">لم تكتشف شيئًا بعد.</div></div>
+  <div class="card rules">
+    <h3>📌 قواعد مهمة من الماتيريال</h3>
+    • الإسطوانات تُستخدم وتُخزَّن <b>رأسيًا</b> ومربوطة بسلاسل.<br>
+    • الفصل بين الأكسجين والغازات القابلة للاشتعال بمسافة <b>≥ 6 م (20 قدمًا)</b> أو حائط <b>≥ 5 أقدام</b> يقاوم الحريق <b>نصف ساعة</b>.<br>
+    • الفحص الهيدروستاتيكي <b>كل 10 سنوات</b> مع تسجيل التاريخ على الإسطوانة.<br>
+    • العدد الأقصى: <b>3</b> إسطوانات كل 500 قدم² (مبنى بدون رشاشات) أو <b>6</b> (مبنى برشاشات).<br>
+    • الهواء المضغوط للتنظيف <b>≤ 30 رطلًا/بوصة²</b>، والأسيتيلين <b>≤ 15 رطلًا/بوصة²</b>.<br>
+    • ممنوع النحاس مع الأسيتيلين، وممنوع لمس محابس الأكسجين بقفاز ملوث بالزيت أو الشحم.<br>
+    • لا تعتمد على <b>لون</b> الإسطوانة، اقرأ اسم الغاز المحفور عليها.<br>
+    • أجهزة السلامة: صمام تنفيس الضغط، القرص القابل للانفجار، السدادة المنصهرة.
+  </div>
+</div>
+
+<script>
+//==SCENE==
+const VW=900,VH=440;
+function cyl(x,base,col,o={}){
+  let s=`<g ${o.rot?`transform="rotate(${o.rot} ${x} ${base})"`:''}>`;
+  s+=`<rect x="${x-16}" y="${base-130}" width="32" height="130" rx="7" fill="${col}"/>`;
+  s+=`<path d="M${x-16} ${base-130} Q${x-16} ${base-152} ${x} ${base-153} Q${x+16} ${base-152} ${x+16} ${base-130}Z" fill="${col}"/>`;
+  s+=`<rect x="${x-16}" y="${base-80}" width="32" height="12" fill="rgba(255,255,255,.35)"/>`;
+  if(o.cap) s+=`<rect x="${x-11}" y="${base-176}" width="22" height="26" rx="6" fill="#444"/>`;
+  else s+=`<rect x="${x-4}" y="${base-170}" width="8" height="18" fill="#777"/><circle cx="${x}" cy="${base-172}" r="9" fill="none" stroke="#777" stroke-width="3"/>`;
+  if(o.chain) s+=`<line x1="${x-26}" y1="${base-100}" x2="${x+26}" y2="${base-100}" stroke="#b0852f" stroke-width="4" stroke-dasharray="6 3"/>`;
+  if(o.tag) s+=`<rect x="${x-15}" y="${base-52}" width="30" height="34" rx="3" fill="#fff" stroke="#555"/><text x="${x}" y="${base-38}" text-anchor="middle" font-size="8" fill="#222">فحص</text><text x="${x}" y="${base-26}" text-anchor="middle" font-size="9" font-weight="700" fill="#C62828">2014</text>`;
+  return s+'</g>';
+}
+function person(x,base,o={}){
+  let s=`<rect x="${x-14}" y="${base-44}" width="10" height="44" fill="#3a4a63"/><rect x="${x+4}" y="${base-44}" width="10" height="44" fill="#3a4a63"/>`;
+  s+=`<rect x="${x-20}" y="${base-96}" width="40" height="54" rx="8" fill="${o.shirt||'#d98a2b'}"/>`;
+  s+=`<circle cx="${x}" cy="${base-112}" r="15" fill="#f2c9a0"/>`;
+  if(o.goggles) s+=`<rect x="${x-14}" y="${base-118}" width="28" height="9" rx="4" fill="#1d2735"/><rect x="${x-11}" y="${base-116}" width="7" height="3" fill="#fff" opacity=".6"/>`;
+  else s+=`<circle cx="${x-6}" cy="${base-114}" r="2.5" fill="#222"/><circle cx="${x+6}" cy="${base-114}" r="2.5" fill="#222"/>`;
+  return s;
+}
+const HS=[
+ {id:'sep',x:112,y:205,w:130,h:167,ok:0,t:'الأكسجين والأسيتيلين متجاوران',r:'الأكسجين والأسيتيلين (قابل للاشتعال) على بُعد أقل من 6 م وبدون حائط فاصل. القاعدة: مسافة ≥ 6 م (20 قدمًا) أو حائط ارتفاعه ≥ 5 أقدام يقاوم الحريق ≥ نصف ساعة.'},
+ {id:'horiz',x:255,y:332,w:165,h:44,ok:0,t:'إسطوانة موضوعة أفقيًا',r:'الإسطوانة ممددة على الأرض. القاعدة: تُستخدم وتُخزَّن الإسطوانات في وضع رأسي.'},
+ {id:'lean',x:425,y:215,w:55,h:160,ok:0,t:'إسطوانة غير مربوطة ومائلة',r:'لا توجد سلسلة تثبّتها. القاعدة: ربط الإسطوانات بسلاسل أثناء الاستعمال لمنع حركتها وسقوطها (قد تنطلق كالصاروخ لو كُسر المحبس).'},
+ {id:'cap',x:480,y:190,w:40,h:182,ok:0,t:'محبس مكشوف بدون غطاء',r:'الإسطوانة غير مستخدمة ومحبسها مكشوف. القاعدة: وضع الغطاء العلوي على مجموعة المحابس لحمايتها لو سقطت الإسطوانة.'},
+ {id:'exp',x:540,y:195,w:42,h:178,ok:0,t:'فحص هيدروستاتيكي منتهٍ',r:'آخر فحص مسجل 2014 (مرّ أكثر من 10 سنوات). القاعدة: فحص الضغط الهيدروستاتيكي كل 10 سنوات مع تسجيل التاريخ على الإسطوانة.'},
+ {id:'heat',x:600,y:205,w:52,h:170,ok:0,t:'تسخين إسطوانة بلهب',r:'لهب موجّه لقاعدة الإسطوانة لزيادة الضغط. القاعدة: ممنوع تسخين الإسطوانات إطلاقًا، وهو خطر انفجار كبير.'},
+ {id:'exit',x:695,y:140,w:190,h:235,ok:0,t:'تخزين قرب مخرج الطوارئ',r:'إسطوانة بجوار باب الطوارئ. القاعدة: ممنوع إطلاقًا تخزين الإسطوانات قرب مخارج الطوارئ.'},
+ {id:'roll',x:196,y:338,w:240,h:98,ok:0,t:'دحرجة إسطوانة باليد',r:'العامل يدحرج الإسطوانة على الأرض. القاعدة: ممنوع دحرجتها، ويُستخدم الترولي (العربة) المخصص لنقلها.'},
+ {id:'eyes',x:512,y:330,w:42,h:104,ok:0,t:'عامل بدون وقاية للعين',r:'العامل يتعامل مع الإسطوانات بعينين مكشوفتين. القاعدة: ارتداء نظارة سلامة أو حامي وجه عند استخدام الغازات المضغوطة.'},
+ {id:'d1',x:20,y:285,w:80,h:150,ok:1,t:'',r:'✓ وضع صحيح: الإسطوانة رأسية ومربوطة بسلسلة ومغطاة المحبس ومنقولة على عربة مخصصة.'},
+ {id:'d2',x:650,y:330,w:44,h:104,ok:1,t:'',r:'✓ وضع صحيح: العامل يرتدي نظارة سلامة.'}
+];
+function buildScene(dbg){
+  let s=`<svg viewBox="0 0 ${VW} ${VH}" id="sc">`;
+  s+=`<rect width="${VW}" height="370" fill="#e9edf3"/><rect y="370" width="${VW}" height="70" fill="#cfd5de"/>`;
+  s+=`<rect x="14" y="14" width="290" height="30" rx="6" fill="#1F3864"/><text x="159" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">منطقة تخزين الغازات المضغوطة</text>`;
+  // door
+  s+=`<rect x="745" y="180" width="140" height="192" fill="#d9d9d9" stroke="#999"/><rect x="790" y="140" width="52" height="26" rx="4" fill="#2E7D32"/><text x="816" y="158" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">EXIT</text><circle cx="765" cy="290" r="5" fill="#777"/>`;
+  s+=cyl(135,370,'#2c6fb7',{cap:1,chain:1})+cyl(215,370,'#9c2f2f',{cap:1,chain:1});
+  s+=`<g transform="translate(262 354) rotate(90)">${cyl(0,0,'#3d8f55',{cap:1})}</g>`;
+  s+=cyl(452,370,'#d9b73a',{cap:1,rot:-12});
+  s+=cyl(500,370,'#7d8896',{chain:1});
+  s+=cyl(560,370,'#3d8f9c',{cap:1,chain:1,tag:1});
+  s+=cyl(625,370,'#8a5fb0',{cap:1,chain:1});
+  s+=`<polygon points="606,372 612,352 618,360 624,338 630,358 636,346 642,372" fill="#f39c12"/><polygon points="614,372 620,358 626,366 632,372" fill="#e74c3c"/><rect x="606" y="372" width="36" height="6" fill="#555"/>`;
+  s+=cyl(715,370,'#d9b73a',{cap:1,chain:1});
+  // foreground
+  s+=`<rect x="34" y="418" width="46" height="6" fill="#777"/><circle cx="42" cy="430" r="7" fill="#444"/><circle cx="72" cy="430" r="7" fill="#444"/>`+cyl(57,418,'#2c6fb7',{cap:1,chain:1});
+  s+=person(222,432,{});
+  s+=`<g transform="translate(252 430) rotate(80) scale(.75)">${cyl(0,0,'#d9b73a',{cap:1})}</g>`;
+  s+=`<path d="M262 392 L372 392" fill="none" stroke="#C62828" stroke-width="3" marker-end="url(#ar)"/><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#C62828"/></marker></defs>`;
+  s+=person(532,432,{shirt:'#c0392b'})+person(672,432,{goggles:1,shirt:'#2e86c1'});
+  HS.forEach(h=>{s+=`<rect class="hs" id="h_${h.id}" x="${h.x}" y="${h.y}" width="${h.w}" height="${h.h}" rx="8" ${dbg?'style="fill:none;stroke:'+(h.ok?'#2E7D32':'#C62828')+';stroke-width:2"':''}/>`;});
+  return s+'</svg>';
+}
+//==END==
+
+const $=id=>document.getElementById(id);
+let found=new Set(),wrong=0,hints=0;
+function reset(){found=new Set();wrong=0;hints=0;$('sceneBox').innerHTML=buildScene();$('sc').addEventListener('click',onClick);
+  $('fb').style.display='none';$('done').className='done';upd();$('fl').innerHTML='لم تكتشف شيئًا بعد.';}
+function upd(){$('pf').textContent='المخالفات المكتشفة: '+found.size+' / 9';$('pw').textContent='أخطاء: '+wrong;}
+function onClick(e){
+  const el=e.target.closest('.hs');if(!el)return;
+  const h=HS.find(v=>'h_'+v.id===el.id);
+  const fb=$('fb');fb.style.display='block';
+  if(h.ok){wrong++;el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),500);fb.className='card fb ok';fb.innerHTML=h.r+'<br><span style="color:var(--red)">هذا ليس مخالفة، حُسب خطأ.</span>';upd();return;}
+  el.classList.remove('pulse');el.classList.add('found');found.add(h.id);
+  fb.className='card fb no';fb.innerHTML='⚠️ <b>'+h.t+'</b><br>'+h.r;
+  const list=$('fl');if(found.size===1)list.innerHTML='';
+  list.innerHTML+=`<div class="it"><b>✓ ${h.t}</b></div>`;upd();
+  if(found.size===9){const d=$('done');d.className='done show';
+    d.innerHTML='🏆 اكتشفت جميع المخالفات التسع!<br>'+(wrong===0?'بدون أي خطأ: أداء ممتاز.':(wrong<=2?'مع '+wrong+' خطأ: أداء جيد جدًا.':'مع '+wrong+' أخطاء: راجع القواعد بالأسفل وأعد المحاولة.'));}
+}
+function hint(){
+  const h=HS.find(v=>!v.ok&&!found.has(v.id));if(!h)return;
+  const el=$('h_'+h.id);el.classList.add('pulse');hints++;setTimeout(()=>el.classList.remove('pulse'),2500);
+}
+reset();
+</script>
+</body>
+</html>
